@@ -8,7 +8,6 @@ module Text.HTML.TagSoup.Navigation.Types.Tag(
   Tag(..)
 , HasTag(..)
 , AsTag(..)
-, tagstr
 , tagAttributes
 , tagAttributeNames
 , tagAttributeValues
@@ -103,9 +102,19 @@ deriveEq1 ''Tag
 deriveOrd1 ''Tag
 deriveShow1 ''Tag
 
-instance Each (Tag str) (Tag str) str str where
-  each =
-    tagstr
+instance Each (Tag str) (Tag str') str str' where
+  each f (TagOpen a as) =
+    TagOpen <$> f a <*> traverse (traverse f) as
+  each f (TagClose s) =
+    TagClose <$> f s
+  each f (TagText s) =
+    TagClose <$> f s
+  each f (TagComment s) =
+    TagClose <$> f s
+  each f (TagWarning s) =
+    TagClose <$> f s
+  each _ (TagPosition r c) =
+    pure (TagPosition r c)
 
 class HasTag a str | a -> str where
   tag ::
@@ -146,21 +155,6 @@ class AsTag a str | a -> str where
 instance AsTag (Tag str) str where
   _Tag =
     id
-
-tagstr ::
-  Traversal (Tag str) (Tag str') str str'
-tagstr f (TagOpen a as) =
-  TagOpen <$> f a <*> traverse (traverse f) as
-tagstr f (TagClose s) =
-  TagClose <$> f s
-tagstr f (TagText s) =
-  TagClose <$> f s
-tagstr f (TagComment s) =
-  TagClose <$> f s
-tagstr f (TagWarning s) =
-  TagClose <$> f s
-tagstr _ (TagPosition r c) =
-  pure (TagPosition r c)
 
 tagAttributes ::
   AsTag a str =>
