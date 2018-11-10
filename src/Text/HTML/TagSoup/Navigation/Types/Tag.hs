@@ -8,16 +8,18 @@ module Text.HTML.TagSoup.Navigation.Types.Tag(
   Tag(..)
 , HasTag(..)
 , AsTag(..)
+, tagOpen
 , tagAttributes
 , tagAttributeNames
 , tagAttributeValues
 , tagRows
 , tagColumns
+, tagsoupTag
 ) where
 
 import Control.Applicative((<*>), pure)
 import Control.Category(id, (.))
-import Control.Lens(Lens', Prism', Traversal, Traversal', Each(each), _1, _2)
+import Control.Lens(Lens', Prism', Traversal', Each(each), Iso, iso, _1, _2, (^.), ( # ))
 import Data.Eq(Eq)
 import Data.Eq.Deriving(deriveEq1)
 import Data.Ord(Ord)
@@ -25,10 +27,10 @@ import Data.Ord.Deriving(deriveOrd1)
 import Data.Foldable(Foldable(foldMap))
 import Data.Functor(Functor(fmap), (<$>))
 import Data.Monoid(mappend, mempty)
-import Data.Semigroup(Semigroup((<>)))
 import Data.Traversable(Traversable(traverse))
-import Prelude(Show, (+))
-import Text.HTML.TagSoup.Navigation.Types.Attribute(Attribute, Row, Column, attributeName, attributeValue)
+import Prelude(Show)
+import Text.HTML.TagSoup.Navigation.Types.Attribute(Attribute, Row, Column, attributeName, attributeValue, tagsoupAttribute)
+import qualified Text.HTML.TagSoup as TagSoup(Tag(TagOpen, TagClose, TagText, TagComment, TagWarning, TagPosition))
 import Text.Show.Deriving(deriveShow1)
 
 data Tag str
@@ -81,22 +83,6 @@ instance Traversable Tag where
     TagWarning <$> f s
   traverse _ (TagPosition r c) =
     pure (TagPosition r c)
-
-instance Semigroup str => Semigroup (Tag str) where
-  TagOpen s1 as1 <> TagOpen s2 as2 =
-    TagOpen (s1 <> s2) (as1 <> as2)
-  TagClose s1 <> TagClose s2 =
-    TagClose (s1 <> s2)
-  TagText s1 <> TagText s2 =
-    TagText (s1 <> s2)
-  TagComment s1 <> TagComment s2 =
-    TagComment (s1 <> s2)
-  TagWarning s1 <> TagWarning s2 =
-    TagWarning (s1 <> s2)
-  TagPosition r1 c1 <> TagPosition r2 c2 =
-    TagPosition (r1 + r2) (c1 + c2)
-  x <> _ =
-    x
 
 deriveEq1 ''Tag
 deriveOrd1 ''Tag
@@ -156,6 +142,12 @@ instance AsTag (Tag str) str where
   _Tag =
     id
 
+tagOpen ::
+  AsTag a str =>
+  Traversal' a str
+tagOpen =
+  _TagOpen . _1
+
 tagAttributes ::
   AsTag a str =>
   Traversal' a (Attribute str)
@@ -185,3 +177,36 @@ tagColumns ::
   Traversal' a Column
 tagColumns =
   _TagPosition . _2
+
+tagsoupTag ::
+  Iso (Tag str) (Tag str') (TagSoup.Tag str) (TagSoup.Tag str')
+tagsoupTag =
+  iso
+    (\t ->
+      case t of
+        TagOpen s as ->
+          TagSoup.TagOpen s (fmap (^. tagsoupAttribute) as)
+        TagClose s ->
+          TagSoup.TagClose s
+        TagText s ->
+          TagSoup.TagText s
+        TagComment s ->
+          TagSoup.TagComment s
+        TagWarning s ->
+          TagSoup.TagWarning s
+        TagPosition r c ->
+          TagSoup.TagPosition r c)
+    (\t ->
+      case t of
+        TagSoup.TagOpen s as ->
+          TagOpen s (fmap (tagsoupAttribute #) as)
+        TagSoup.TagClose s ->
+          TagClose s
+        TagSoup.TagText s ->
+          TagText s
+        TagSoup.TagComment s ->
+          TagComment s
+        TagSoup.TagWarning s ->
+          TagWarning s
+        TagSoup.TagPosition r c ->
+          TagPosition r c)
