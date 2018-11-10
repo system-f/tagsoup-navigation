@@ -14,6 +14,8 @@ module Text.HTML.TagSoup.Navigation.Types.TagTree(
 , tagTreeAttributes
 , tagTreeAttributeNames
 , tagTreeAttributeValues
+, tagTree'
+, flattenTree
 ) where
 
 import Control.Applicative((<*>))
@@ -31,7 +33,7 @@ import Data.Traversable(Traversable(traverse))
 import Prelude(Show)
 import Text.HTML.TagSoup.Navigation.Types.Attribute(Attribute, tagsoupAttribute, attributeName, attributeValue)
 import Text.HTML.TagSoup.Navigation.Types.Tag(Tag, AsTag(_Tag), tagsoupTag)
-import qualified Text.HTML.TagSoup.Tree as TagSoup(TagTree(TagBranch, TagLeaf))
+import qualified Text.HTML.TagSoup.Tree as TagSoup(TagTree(TagBranch, TagLeaf), tagTree, flattenTree)
 import Text.Show.Deriving(deriveShow1)
 
 data TagTree str =
@@ -162,3 +164,16 @@ tagTreeAttributeValues =
 deriveEq1 ''TagTree
 deriveOrd1 ''TagTree
 deriveShow1 ''TagTree
+
+tagTree' ::
+  Eq str =>
+  [Tag str]
+  -> [TagTree str] 
+tagTree' =
+  fmap (tagsoupTagTree #) . TagSoup.tagTree . fmap (^. tagsoupTag)
+
+flattenTree ::
+  [TagTree str]
+  -> [Tag str]
+flattenTree =
+  fmap (tagsoupTag #) . TagSoup.flattenTree . fmap (^. tagsoupTagTree)
