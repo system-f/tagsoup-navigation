@@ -3,18 +3,19 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Text.HTML.TagSoup.Navigation.Attribute(
+module Text.HTML.TagSoup.Navigation.Types.Attribute(
   Attribute(..)
 , AsAttribute(..)
 , HasAttribute(..)
 , Row
 , Column
 , bothAttributes
+, tagsoupAttribute
 ) where
 
 import Control.Applicative(Applicative((<*>), pure), liftA2)
 import Control.Category((.), id)
-import Control.Lens(Each(each), Reversing(reversing), Rewrapped, Wrapped(Unwrapped), _Wrapped', Field1(_1), Field2(_2), Prism', Lens', Traversal, iso)
+import Control.Lens(Each(each), Reversing(reversing), Rewrapped, Wrapped(Unwrapped), _Wrapped', _Wrapped, Field1(_1), Field2(_2), Prism', Lens', Traversal, Iso, iso)
 import Control.Monad(Monad((>>=), return))
 import Control.Monad.Zip(MonadZip(mzipWith))
 import Data.Bool((&&))
@@ -32,8 +33,7 @@ import Data.Semigroup(Semigroup((<>)))
 import Data.Traversable(Traversable(traverse))
 import Prelude(Show)
 import Text.HTML.TagSoup(Row, Column)
-import qualified Text.HTML.TagSoup as TagSoup()
-import qualified Text.HTML.TagSoup.Tree as TagSoup()
+import qualified Text.HTML.TagSoup as TagSoup(Attribute)
 
 data Attribute str =
   Attribute
@@ -167,3 +167,8 @@ bothAttributes ::
   Traversal (Attribute str) (Attribute str') str str'
 bothAttributes f (Attribute s1 s2) =
   Attribute <$> f s1 <*> f s2
+
+tagsoupAttribute ::
+  Iso (Attribute str) (Attribute str') (TagSoup.Attribute str) (TagSoup.Attribute str')
+tagsoupAttribute =
+  _Wrapped
