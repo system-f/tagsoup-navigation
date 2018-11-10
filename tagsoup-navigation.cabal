@@ -33,10 +33,11 @@ library
                     , tagsoup >= 0.13 && < 0.15
                     , tagsoup-selection >= 0.1 && < 0.2
                     , transformers >= 0.5 && < 0.6
+                    , deriving-compat >= 0.5 && < 0.6
                     
   ghc-options:
                     -Wall
-                    
+
   default-extensions:
   
                     NoImplicitPrelude
@@ -46,6 +47,16 @@ library
 
   exposed-modules:
                     Text.HTML.TagSoup.Navigation
+                    Text.HTML.TagSoup.Navigation.Parse
+                    Text.HTML.TagSoup.Navigation.Parse.Parse
+                    Text.HTML.TagSoup.Navigation.Parse.ParseOptions
+                    Text.HTML.TagSoup.Navigation.Render
+                    Text.HTML.TagSoup.Navigation.Render.Render
+                    Text.HTML.TagSoup.Navigation.Render.RenderOptions
+                    Text.HTML.TagSoup.Navigation.Types
+                    Text.HTML.TagSoup.Navigation.Types.Attribute
+                    Text.HTML.TagSoup.Navigation.Types.Tag
+                    Text.HTML.TagSoup.Navigation.Types.TagTree
 
 test-suite          tests
 
