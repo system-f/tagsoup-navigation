@@ -9,6 +9,7 @@ module Text.HTML.TagSoup.Navigation.Render.RenderOptions(
 , AsRenderOptions(..)
 , tagsoupRenderOptions
 , boolRenderOptions
+, xmapRenderOptions
 ) where
 
 import Text.StringLike(StringLike)
@@ -92,3 +93,11 @@ boolRenderOptions ::
   Traversal' (RenderOptions str) (str -> Bool)
 boolRenderOptions f (RenderOptions e m r) =
   RenderOptions e <$> f m <*> f r
+
+xmapRenderOptions ::
+  (str -> str')
+  -> (str' -> str)
+  -> RenderOptions str
+  -> RenderOptions str'
+xmapRenderOptions f g (RenderOptions e m r) =
+  RenderOptions (f . e . g) (m . g) (r . g)

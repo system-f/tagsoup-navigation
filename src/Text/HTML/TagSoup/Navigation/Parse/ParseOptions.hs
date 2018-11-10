@@ -9,11 +9,12 @@ module Text.HTML.TagSoup.Navigation.Parse.ParseOptions(
 , AsParseOptions(..)
 , tagsoupParseOptions
 , boolParseOptions
+, xmapParseOptions
 ) where
 
 import Control.Lens(Lens', Prism', Iso, Traversal', ( # ), from, iso, (^.))
 import Text.StringLike(StringLike)
-import qualified Text.HTML.TagSoup as TagSoup(ParseOptions(ParseOptions), parseOptions)
+import qualified Text.HTML.TagSoup as TagSoup(ParseOptions(ParseOptions), parseOptionsFast)
 import Text.HTML.TagSoup.Navigation.Types.Tag(Tag, tagsoupTag)
 import Data.Bool(Bool, (&&))
 import Control.Category((.), id)
@@ -82,7 +83,7 @@ instance Semigroup str => Semigroup (ParseOptions str) where
 
 instance (Monoid str, StringLike str) => Monoid (ParseOptions str) where
   mempty =
-    tagsoupParseOptions # TagSoup.parseOptions
+    tagsoupParseOptions # TagSoup.parseOptionsFast
   ParseOptions p1 w1 ed1 ea1 tm1 `mappend` ParseOptions p2 w2 ed2 ea2 tm2 =
     ParseOptions (p1 && p2) (w1 && w2) (\z -> ed1 z `mappend` ed2 z) (\z -> ea1 z `mappend` ea2 z) (tm1 && tm2)
 
@@ -107,3 +108,11 @@ boolParseOptions ::
   Traversal' (ParseOptions str) Bool
 boolParseOptions f (ParseOptions p w ed ea tm) =
   ParseOptions <$> f p <*> f w <*> pure ed <*> pure ea <*> f tm
+
+xmapParseOptions ::
+  (str -> str')
+  -> (str' -> str)
+  -> ParseOptions str
+  -> ParseOptions str'
+xmapParseOptions f g (ParseOptions p w ed ea tm) =
+  ParseOptions p w (\(s, b) -> fmap (fmap f) (ed (g s, b))) (\(s, b) -> let (s', t) = (ea (g s, b)) in (f s', fmap (fmap f) t)) tm
