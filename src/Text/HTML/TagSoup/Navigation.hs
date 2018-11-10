@@ -5,4 +5,5 @@ module Text.HTML.TagSoup.Navigation(
 ) where
 
 import Text.HTML.TagSoup.Navigation.Parse as N
+import Text.HTML.TagSoup.Navigation.Render as N
 import Text.HTML.TagSoup.Navigation.Types as N

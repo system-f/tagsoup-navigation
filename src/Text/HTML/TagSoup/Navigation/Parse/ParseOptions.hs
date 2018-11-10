@@ -76,7 +76,7 @@ instance AsParseOptions (ParseOptions str) str where
   _ParseOptions =
     id
 
-instance (Semigroup str, StringLike str) => Semigroup (ParseOptions str) where
+instance Semigroup str => Semigroup (ParseOptions str) where
   ParseOptions p1 w1 ed1 ea1 tm1 <> ParseOptions p2 w2 ed2 ea2 tm2 =
     ParseOptions (p1 && p2) (w1 && w2) (\z -> ed1 z <> ed2 z) (\z -> ea1 z <> ea2 z) (tm1 && tm2)
 

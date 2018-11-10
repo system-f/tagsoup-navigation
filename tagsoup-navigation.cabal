@@ -38,7 +38,7 @@ library
   ghc-options:
                     -Wall
                     -ddump-splices
-                    
+
   default-extensions:
   
                     NoImplicitPrelude
@@ -50,6 +50,8 @@ library
                     Text.HTML.TagSoup.Navigation
                     Text.HTML.TagSoup.Navigation.Parse
                     Text.HTML.TagSoup.Navigation.Parse.ParseOptions
+                    Text.HTML.TagSoup.Navigation.Render
+                    Text.HTML.TagSoup.Navigation.Render.RenderOptions
                     Text.HTML.TagSoup.Navigation.Types
                     Text.HTML.TagSoup.Navigation.Types.Attribute
                     Text.HTML.TagSoup.Navigation.Types.Tag
