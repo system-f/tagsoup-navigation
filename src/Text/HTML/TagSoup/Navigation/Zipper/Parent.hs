@@ -39,8 +39,6 @@ data Parent str =
     [TagTree str]
   deriving (Eq, Ord, Show)
 
--- extend, comonad
-
 instance Functor Parent where
   fmap f (Parent l x a r) =
     Parent (fmap (fmap f) l) (f x) (fmap (fmap f) a) (fmap (fmap f) r)

@@ -59,6 +59,7 @@ library
                     Text.HTML.TagSoup.Navigation.Types.TagTree
                     Text.HTML.TagSoup.Navigation.Zipper
                     Text.HTML.TagSoup.Navigation.Zipper.Parent
+                    Text.HTML.TagSoup.Navigation.Zipper.Zipper
 
 test-suite          tests
 
