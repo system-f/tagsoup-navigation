@@ -229,21 +229,30 @@ prop_lawNaturalityTraversable =
     Gen.bool
 
 lawIdentityTraversable ::
-  (Traversable t, Eq (t a)) =>
-  t ()
-  -> t a
-  -> Bool
-lawIdentityTraversable _ =
-  \x -> traverse Identity x == Identity x
+  forall f a.
+  (Show a, Arg a, Vary a, Eq (f a), Show (f a), Traversable f, Applicative f) =>
+  (forall x. Gen x -> Gen (f x))
+  -> Gen a
+  -> Property
+lawIdentityTraversable genF genA =
+  property $
+    do  x <- forAll $ genF genA
+        traverse Identity x === Identity x
+        
+prop_lawIdentityTraversable ::
+  Property
+prop_lawIdentityTraversable =
+  lawIdentityTraversable
+    (Gen.list (Range.constant 0 5))
+    Gen.bool
 
 lawCompositionTraversable ::
   (Traversable t, Applicative f, Applicative g, Eq (t c), Eq1 f, Eq1 g) =>
-  t ()
-  -> (a -> f b)
+  (a -> f b)
   -> (b -> g c)
   -> t a
   -> Bool
-lawCompositionTraversable _ f g =
+lawCompositionTraversable f g =
   \x -> traverse (Compose . fmap g . f) x == (Compose . fmap (traverse g) . traverse f) x
 
 instance Traversable L where
