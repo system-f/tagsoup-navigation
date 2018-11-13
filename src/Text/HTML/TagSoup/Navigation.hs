@@ -12,6 +12,7 @@ import qualified Hedgehog.Gen as Gen(list, bool)
 import qualified Hedgehog.Range as Range(constant)
 import Control.Applicative(Applicative(pure, (<*>)))
 import Control.Category((.), id)
+import Data.Bifunctor
 import Data.Bool(Bool)
 import Data.Either(Either)
 import Data.Eq(Eq)
@@ -160,6 +161,22 @@ instance Functor T' where
   fmap f (TCTMW four x) =
     TCTMW four (f x)
 
+instance Functor TT where
+  fmap f (TTB a x y) =
+    TTB (f a) (fmap (fmap f) x) (fmap (fmap f) y)
+  fmap f (F x) =
+    F (fmap f x)
+
+instance Functor TT2 where
+  fmap f (TT2 x p q r s) =
+    TT2 (f x) (fmap (fmap f) p) (fmap f q) (fmap (fmap f) r) (fmap (fmap f) s)
+
+instance Functor TT' where
+  fmap f (TT a x y) =
+    TT (f a) (fmap (fmap f) x) (fmap (fmap f) y)
+  fmap f (TT2' p q r s) =
+    TT2' (bimap f (fmap f) p) (fmap (bimap f (fmap (fmap f))) q)  (fmap (fmap f) r) (fmap (fmap f) s)
+    
 -- Foldable
 
 instance Foldable L where
