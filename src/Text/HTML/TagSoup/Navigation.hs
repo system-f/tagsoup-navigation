@@ -6,23 +6,25 @@
 
 module Text.HTML.TagSoup.Navigation where
 
-import Hedgehog
-import Hedgehog.Function
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import Control.Applicative
-import Control.Category
-import Data.Bool
-import Data.Either
-import Data.Eq
-import Data.Functor
-import Data.Functor.Compose
-import Data.Functor.Identity
-import Data.Foldable
-import Data.Maybe
-import Data.Monoid
-import Data.Traversable
+import Hedgehog(Gen, Property, property, forAll, (===))
+import Hedgehog.Function(Arg, Vary, forAllFn, fn)
+import qualified Hedgehog.Gen as Gen(list, bool)
+import qualified Hedgehog.Range as Range(constant)
+import Control.Applicative(Applicative(pure, (<*>)))
+import Control.Category((.), id)
+import Data.Bool(Bool)
+import Data.Either(Either)
+import Data.Eq(Eq)
+import Data.Functor(Functor(fmap))
 import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Functor.Classes(Eq1, Show1)
+import Data.Functor.Compose(Compose(Compose))
+import Data.Functor.Identity(Identity(Identity))
+import Data.Foldable(Foldable(foldMap))
+import Data.Maybe(Maybe(Just, Nothing))
+import Data.Monoid(mempty, mappend)
+import Data.Traversable(Traversable(traverse))
 import Prelude(Show)
 
 data NN = -- 99
@@ -237,7 +239,9 @@ lawIdentityTraversable ::
 lawIdentityTraversable genF genA =
   property $
     do  x <- forAll $ genF genA
-        traverse Identity x === Identity x
+        let p = traverse Identity x
+        let q = Identity x
+        p === q
         
 prop_lawIdentityTraversable ::
   Property
@@ -247,13 +251,40 @@ prop_lawIdentityTraversable =
     Gen.bool
 
 lawCompositionTraversable ::
-  (Traversable t, Applicative f, Applicative g, Eq (t c), Eq1 f, Eq1 g) =>
-  (a -> f b)
-  -> (b -> g c)
-  -> t a
-  -> Bool
-lawCompositionTraversable f g =
-  \x -> traverse (Compose . fmap g . f) x == (Compose . fmap (traverse g) . traverse f) x
+  forall f a b c.
+  ( Show (f a)
+    , Show (f b)
+    , Show a, Arg a, Vary a
+    , Show b, Arg b, Vary b
+    , Eq (f c)
+    , Eq1 f
+    , Show1 f
+    , Show (f c)
+    , Traversable f
+    , Applicative f
+  ) =>
+  (forall x. Gen x -> Gen (f x))
+  -> Gen a
+  -> Gen b
+  -> Gen c
+  -> Property
+lawCompositionTraversable genF genA genB genC =
+  property $ do
+    f <- forAllFn $ fn @a (genF genB)
+    g <- forAllFn $ fn @b (genF genC)
+    x <- forAll $ genF genA
+    let p = traverse (Compose . fmap g . f) x
+    let q = (Compose . fmap (traverse g) . traverse f) x
+    p === q
+
+prop_lawCompositionTraversable ::
+  Property
+prop_lawCompositionTraversable =
+  lawCompositionTraversable
+    (Gen.list (Range.constant 0 5))
+    Gen.bool
+    Gen.bool
+    Gen.bool
 
 instance Traversable L where
   traverse _ LN =
