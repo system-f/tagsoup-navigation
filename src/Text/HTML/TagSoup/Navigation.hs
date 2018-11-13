@@ -230,7 +230,7 @@ prop_lawNaturalityTraversable =
 
 lawIdentityTraversable ::
   forall f a.
-  (Show a, Arg a, Vary a, Eq (f a), Show (f a), Traversable f, Applicative f) =>
+  (Eq (f a), Show (f a), Traversable f) =>
   (forall x. Gen x -> Gen (f x))
   -> Gen a
   -> Property
