@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE InstanceSigs #-}
@@ -72,6 +71,26 @@ data L' a =
 data A' a =
   A' Bool a
   deriving (Eq, Show)
+
+----
+
+moveL ::
+  L' a
+  -> Maybe (L' a)
+moveL (L' LN _ _) =
+  Nothing
+moveL (L' (LC h t) x r) =
+  Just (L' t h (LC x r))
+
+moveR ::
+  L' a
+  -> Maybe (L' a)
+moveR (L' _ _ LN) =
+  Nothing
+moveR (L' l x (LC h t)) =
+  Just (L' (LC x l) h t)
+
+----
 
 -- T' a    = L (A a) + a * L (A a) * A' a * L (A a) + 4
 -- more usefully for zippers:
@@ -420,14 +439,6 @@ instance Extend L' where
               LC h (unfoldr f r)
             Nothing ->
               LN
-        moveL (L' LN _ _) =
-          Nothing
-        moveL (L' (LC h t) x r) =
-          Just (L' t h (LC x r))
-        moveR (L' _ _ LN) =
-          Nothing
-        moveR (L' l x (LC h t)) =
-          Just (L' (LC x l) h t)
         dup x =
           (x, x)
         unf m =
@@ -441,10 +452,21 @@ instance Extend A' where
 instance Extend T' where
   duplicate (TO' a l) =
     TO' (TO' a l) (hh l)
-  duplicate (T' _ _ _ _) =
+  duplicate (T' x l a r) =
     undefined
-  duplicate (TCTMW _ _) =
+  duplicate (TCTMW four x) =
     undefined
+
+{-
+data T' a
+  = TO' a (L (A a)) | T' a (L (A a)) (A' a) (L (A a)) | TCTMW Four a
+  -}
+
+hh :: L (A a) -> L (A (T' a))
+hh LN = LN
+hh (LC a l) = LC (A undefined undefined) undefined
+
+undefined = undefined
 
 -- todo
 
@@ -471,8 +493,3 @@ instance Comonad T' where
   extract (TCTMW _ a) =
     a
   
-hh :: L (A a) -> L (A (T' a))
-hh LN = LN
-hh (LC a l) = LC (A undefined undefined) undefined
-
-undefined = undefined
