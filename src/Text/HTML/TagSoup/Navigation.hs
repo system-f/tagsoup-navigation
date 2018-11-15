@@ -3,6 +3,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Text.HTML.TagSoup.Navigation where
 
@@ -12,7 +14,9 @@ import qualified Hedgehog.Gen as Gen(list, bool)
 import qualified Hedgehog.Range as Range(constant)
 import Control.Applicative(Applicative(pure, (<*>)))
 import Control.Category((.), id)
-import Data.Bifunctor
+import Data.Bifoldable(bifoldMap)
+import Data.Bifunctor(bimap)
+import Data.Bitraversable(bitraverse)
 import Data.Bool(Bool)
 import Data.Either(Either)
 import Data.Eq(Eq)
@@ -21,11 +25,13 @@ import Data.Function(($))
 import Data.Functor((<$>))
 import Data.Functor.Classes(Eq1, Show1)
 import Data.Functor.Compose(Compose(Compose))
+-- import Data.Functor.Extend
 import Data.Functor.Identity(Identity(Identity))
 import Data.Foldable(Foldable(foldMap))
 import Data.Maybe(Maybe(Just, Nothing))
 import Data.Monoid(mempty, mappend)
 import Data.Traversable(Traversable(traverse))
+import Data.Tuple(uncurry)
 import Prelude(Show)
 
 data NN = -- 99
@@ -220,6 +226,22 @@ instance Foldable T' where
   foldMap f (TCTMW _ x) =
     f x
 
+instance Foldable TT where
+  foldMap f (TTB a x y) =
+    f a `mappend` foldMap (foldMap f) x `mappend` foldMap (foldMap f) y
+  foldMap f (F x) =
+    foldMap f x
+
+instance Foldable TT2 where
+  foldMap f (TT2 x p q r s) =
+    f x `mappend` foldMap (foldMap f) p `mappend` foldMap f q `mappend` foldMap (foldMap f) r `mappend` foldMap (foldMap f) s
+
+instance Foldable TT' where
+  foldMap f (TT a x y) =
+    f a `mappend` foldMap (foldMap f) x `mappend` foldMap (foldMap f) y
+  foldMap f (TT2' p q r s) =
+    bifoldMap f (foldMap f) p `mappend` foldMap (uncurry mappend . bimap f (foldMap (foldMap f))) q `mappend` foldMap (foldMap f) r `mappend` foldMap (foldMap f) s
+
 -- Traversable
 
 lawNaturalityTraversable ::
@@ -343,11 +365,54 @@ instance Traversable T' where
   traverse f (TCTMW four x) =
     TCTMW four <$> f x
 
--- Comonad
+instance Traversable TT where
+  traverse f (TTB a x y) =
+    TTB <$> f a <*> traverse (traverse f) x <*> traverse (traverse f) y
+  traverse f (F x) =
+    F <$> traverse f x
 
-instance Comonad L' where
-  extract (L' _ x _) =
-    x
+instance Traversable TT2 where
+  traverse f (TT2 x p q r s) =
+    TT2 <$> f x <*> traverse (traverse f) p <*> traverse f q <*> traverse (traverse f) r <*> traverse (traverse f) s
+
+instance Traversable TT' where
+  traverse f (TT a x y) =
+    TT <$> f a <*> traverse (traverse f) x <*> traverse (traverse f) y
+  traverse f (TT2' p q r s) =
+    TT2' <$> bitraverse f (traverse f) p <*> traverse (bitraverse f (traverse (traverse f))) q <*> traverse (traverse f) r <*> traverse (traverse f) s
+
+-- Extend
+
+class Functor f => Extend f where
+  duplicate ::
+    f a
+    -> f (f a)
+
+instance Extend L where
+  duplicate LN =
+    LN
+  duplicate l@(LC _ t) =
+    LC l (duplicate t)
+
+instance Extend A where
+  duplicate a =
+    A a a
+
+instance Extend T where
+  duplicate t@(TO _ l) =
+    TO t (fmap (fmap (\a -> TO a l)) l)
+  duplicate (TC a) =
+    TC (TC a)
+  duplicate (TX a) =
+    TX (TX a)
+  duplicate (TM a) =
+    TM (TM a)
+  duplicate (TW a) =
+    TW (TW a)
+  duplicate (TP n) =
+    TP n
+
+instance Extend L' where
   duplicate z =
     let unfoldr f x =
           case f x of
@@ -369,18 +434,45 @@ instance Comonad L' where
           unfoldr (fmap dup . m) z
     in  L' (unf moveL) z (unf moveR)
 
-instance Comonad A' where
-  extract (A' _ a) =
-    a
+instance Extend A' where
   duplicate (A' b a) =
     A' b (A' b a)
 
-----
+instance Extend T' where
+  duplicate (TO' a l) =
+    TO' (TO' a l) (hh l)
+  duplicate (T' _ _ _ _) =
+    undefined
+  duplicate (TCTMW _ _) =
+    undefined
 
-class Functor f => Comonad f where
+-- todo
+
+-- Comonad
+
+class Extend f => Comonad f where
   extract ::
     f a
     -> a
-  duplicate ::
-    f a
-    -> f (f a)
+
+instance Comonad L' where
+  extract (L' _ x _) =
+    x
+  
+instance Comonad A' where
+  extract (A' _ a) =
+    a
+  
+instance Comonad T' where
+  extract (TO' a _) =
+    a
+  extract (T' a _ _ _) =
+    a
+  extract (TCTMW _ a) =
+    a
+  
+hh :: L (A a) -> L (A (T' a))
+hh LN = LN
+hh (LC a l) = LC (A undefined undefined) undefined
+
+undefined = undefined
